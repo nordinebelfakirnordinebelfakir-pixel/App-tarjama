@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarjama - Universal Translator</title>
+    <style>
+        /* CSS : Design et Animations */
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        select, textarea, button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        textarea {
+            resize: none;
+            height: 120px;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            background: var(--primary);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            transform: scale(1.02);
+            background: #2563eb;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #output {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #0f172a;
+            border-radius: 10px;
+            min-height: 50px;
+            color: #cbd5e1;
+            font-size: 1.1rem;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+            color: var(--primary);
+        }
+
+        /* Animations Keyframes */
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .controls { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Tarjama - Universal Translator</h1>
+        
+        <div class="card">
+            <div class="controls">
+                <select id="langFrom"></select>
+                <select id="langTo"></select>
+            </div>
+
+            <textarea id="inputText" placeholder="Type text here to translate..."></textarea>
+            
+            <button onclick="translateText()">🔄 Translate Now</button>
+            
+            <div class="loader" id="loader">Translating...</div>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script>
+        // Liste des langues (50+ langues)
+        const languages = [
+            { code: "en", name: "English" },
+            { code: "fr", name: "French" },
+            { code: "ar", name: "Arabic" },
+            { code: "es", name: "Spanish" },
+            { code: "de", name: "German" },
+            { code: "it", name: "Italian" },
+            { code: "pt", name: "Portuguese" },
+            { code: "ru", name: "Russian" },
+            { code: "zh", name: "Chinese" },
+            { code: "ja", name: "Japanese" },
+            { code: "ko", name: "Korean" },
+            { code: "tr", name: "Turkish" },
+            { code: "nl", name: "Dutch" },
+            { code: "pl", name: "Polish" },
+            { code: "hi", name: "Hindi" },
+            { code: "bn", name: "Bengali" },
+            { code: "ur", name: "Urdu" },
+            { code: "id", name: "Indonesian" },
+            { code: "ms", name: "Malay" },
+            { code: "th", name: "Thai" },
+            { code: "vi", name: "Vietnamese" },
+            { code: "sv", name: "Swedish" },
+            { code: "no", name: "Norwegian" },
+            { code: "da", name: "Danish" },
+            { code: "fi", name: "Finnish" },
+            { code: "cs", name: "Czech" },
+            { code: "el", name: "Greek" },
+            { code: "he", name: "Hebrew" },
+            { code: "fa", name: "Persian" },
+            { code: "uk", name: "Ukrainian" }
+        ];
+
+        // Remplir les listes déroulantes
+        const langFrom = document.getElementById('langFrom');
+        const langTo = document.getElementById('langTo');
+
+        languages.forEach(lang => {
+            let option1 = new Option(lang.name, lang.code);
+            let option2 = new Option(lang.name, lang.code);
+            langFrom.add(option1);
+            langTo.add(option2);
+        });
+
+        // Valeurs par défaut
+        langFrom.value = "en";
+        langTo.value = "fr";
+
+        // Fonction de traduction
+        async function translateText() {
+            const text = document.getElementById('inputText').value;
+            const output = document.getElementById('output');
+            const loader = document.getElementById('loader');
+            
+            if(!text.trim()) {
+                output.innerText = "⚠️ Please enter some text to translate";
+                output.style.opacity = '1';
+                return;
+            }
+
+            output.style.opacity = '0';
+            loader.style.display = 'block';
+
+            const from = langFrom.value;
+            const to = langTo.value;
+
+            // Utilisation de l'API MyMemory (Gratuite)
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if(data.responseStatus === 200) {
+                    output.innerText = data.responseData.translatedText;
+                    output.style.opacity = '1';
+                } else {
+                    output.innerText = "❌ Error: " + (data.responseDetails || "Translation failed");
+                    output.style.opacity = '1';
+                }
+            } catch (error) {
+                output.innerText = "❌ Network Error. Please check your internet connection.";
+                output.style.opacity = '1';
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // Traduction automatique avec touche Entrée (Ctrl+Enter)
+        document.getElementById('inputText').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                translateText();
+            }
+        });
+    </script>
+</body>
+</html>
